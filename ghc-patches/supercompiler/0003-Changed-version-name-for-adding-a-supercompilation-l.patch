@@ -1,0 +1,26 @@
+From e027e6228128c87b93c68e5f06eb73009c04f4d5 Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Tue, 7 Mar 2017 05:05:34 +0100
+Subject: [PATCH 3/8] Changed version name for adding a supercompilation label.
+
+---
+ configure.ac | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 8e3d9d2837..d2288b0238 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -13,7 +13,8 @@ dnl
+ # see what flags are available. (Better yet, read the documentation!)
+ #
+ 
+-AC_INIT([The Glorious Glasgow Haskell Compilation System], [7.5], [glasgow-haskell-bugs@haskell.org], [ghc])
++#AC_INIT([The Glorious Glasgow Haskell Compilation System], [7.5], [glasgow-haskell-bugs@haskell.org], [ghc])
++AC_INIT([The Glorious Glasgow Haskell Compilation System w/Supercompilation], [7.5], [glasgow-haskell-bugs@haskell.org], [ghc])
+ 
+ # Set this to YES for a released version, otherwise NO
+ : ${RELEASE=NO}
+-- 
+2.21.0 (Apple Git-122.2)
+

@@ -1,0 +1,19 @@
+From 14981b88ccea3cd91c56f9ba22841270e4f2adcb Mon Sep 17 00:00:00 2001
+From: Luigi <luismastrangelo@gmail.com>
+Date: Tue, 15 Jan 2019 14:52:01 +0100
+Subject: [PATCH 09/10] New commits on submodules.
+
+---
+ nofib | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/nofib b/nofib
+index 8632268ad8..cc8fc601f8 160000
+--- a/nofib
++++ b/nofib
+@@ -1 +1 @@
+-Subproject commit 8632268ad8405f0c01aaad3ad16e23c65771ba49
++Subproject commit cc8fc601f8869ebf75c58abccd8afc04dd8f0ec4
+-- 
+2.21.0 (Apple Git-122.2)
+

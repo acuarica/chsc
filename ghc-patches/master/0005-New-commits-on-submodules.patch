@@ -1,0 +1,19 @@
+From 0d7776a34828a8da19446b2a1a78933ad16ff71f Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Mon, 30 Oct 2017 10:35:52 +0100
+Subject: [PATCH 05/10] New commits on submodules.
+
+---
+ utils/haddock | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/utils/haddock b/utils/haddock
+index 0e82a0b3aa..aca68f620b 160000
+--- a/utils/haddock
++++ b/utils/haddock
+@@ -1 +1 @@
+-Subproject commit 0e82a0b3aa78af13f5ef52a7d9bac9d0c4e94e02
++Subproject commit aca68f620beb07f9bdebdf52948c6ea670be4980
+-- 
+2.21.0 (Apple Git-122.2)
+

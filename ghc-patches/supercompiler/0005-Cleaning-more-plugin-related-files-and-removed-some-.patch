@@ -1,0 +1,88 @@
+From ac430b82eee578bb98305ec2262acf6ace8b526a Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Tue, 7 Mar 2017 05:27:20 +0100
+Subject: [PATCH 5/8] Cleaning more plugin related files and removed some print
+ expressions (used to see if the supercompiler actually was running:)
+
+---
+ compiler/supercompile/.gitignore      |  2 --
+ compiler/supercompile/CHSC.hs         | 44 ---------------------------
+ compiler/supercompile/Supercompile.hs |  2 +-
+ 3 files changed, 1 insertion(+), 47 deletions(-)
+ delete mode 100644 compiler/supercompile/.gitignore
+ delete mode 100644 compiler/supercompile/CHSC.hs
+
+diff --git a/compiler/supercompile/.gitignore b/compiler/supercompile/.gitignore
+deleted file mode 100644
+index 1c20c831c7..0000000000
+--- a/compiler/supercompile/.gitignore
++++ /dev/null
+@@ -1,2 +0,0 @@
+-# Ignore directory created by install-plugin-inplace
+-dist/
+diff --git a/compiler/supercompile/CHSC.hs b/compiler/supercompile/CHSC.hs
+deleted file mode 100644
+index c617de858b..0000000000
+--- a/compiler/supercompile/CHSC.hs
++++ /dev/null
+@@ -1,44 +0,0 @@
+-module CHSC (Supercompile(..), plugin) where
+-
+-import Supercompile
+-import GhcPlugins
+-
+-import Data.Data     (Data)
+-import Data.Typeable (Typeable)
+-import Data.List     (nub)
+-
+-
+--- The supercomplier behaves as follows:
+---  1. If the command line contains -fplugin-opt=CHSC:supercompile or the module is annotated
+---     with Supercompile then we supercompile the whole module
+---  2. Otherwise, we supercompile any individual definitions annoted with Supercompile
+-
+-data Supercompile = Supercompile deriving (Data, Typeable)
+-
+-
+-plugin :: Plugin
+-plugin = defaultPlugin {
+-    installCoreToDos = install
+-  }
+-
+-install :: [CommandLineOption] -> [CoreToDo] -> CoreM [CoreToDo]
+-install options todos = do
+-    unconditional <- case nub options of
+-        []               -> return False
+-        ["supercompile"] -> return True
+-        _                -> fail "CHSC: the only recognised command line option is -fplugin-opt=CHSC:supercompile"
+-    return $ CoreDoPluginPass "Supercompile (CHSC)" (pass unconditional) : todos
+-
+-pass :: Bool -> ModGuts -> CoreM ModGuts
+-pass unconditional guts = do
+-    -- Determine which top-level binders should be supercompiled
+-    should_sc <- case unconditional of
+-        True  -> return (const True)
+-        False -> do
+-            anns :: UniqFM Supercompile <- getFirstAnnotations deserializeWithData guts
+-            mod <- getModule
+-            return $ if mod `elemUFM` anns
+-                      then const True
+-                      else (`elemUFM` anns)
+-    -- Do the deed
+-    bindsOnlyPass (return . supercompileProgramSelective should_sc) guts
+diff --git a/compiler/supercompile/Supercompile.hs b/compiler/supercompile/Supercompile.hs
+index b9c55ebda2..d921b96b8f 100644
+--- a/compiler/supercompile/Supercompile.hs
++++ b/compiler/supercompile/Supercompile.hs
+@@ -306,7 +306,7 @@ mkModuleFinder = do
+ -}
+ 
+ supercompileProgramSelective :: {-(Module -> ModIface) ->-} (Id -> Bool) -> [CoreBind] -> IO [CoreBind]
+-supercompileProgramSelective {-mod_finder-} should_sc binds = print "supercompileProgramSelective" >> liftM (\e' -> [Rec $ (x, e') : rebuild x]) (supercompile {-mod_finder-} e)
++supercompileProgramSelective {-mod_finder-} should_sc binds = liftM (\e' -> [Rec $ (x, e') : rebuild x]) (supercompile {-mod_finder-} e)
+   where x = mkSysLocal (fsLit "sc") topUnique (exprType e)
+         -- NB: we assume no-shadowing at top level, which is probably reasonable
+         flat_binds = flattenBinds binds
+-- 
+2.21.0 (Apple Git-122.2)
+

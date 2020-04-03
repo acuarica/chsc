@@ -1,0 +1,52 @@
+From 3692714e16688eba1a6ed3f408f7e6d2c5f2ce56 Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Mon, 6 Mar 2017 20:49:49 +0100
+Subject: [PATCH 1/8] Added fingerprint of all subrepos that make it compile
+
+---
+ supercompiler.fp | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 supercompiler.fp
+
+diff --git a/supercompiler.fp b/supercompiler.fp
+new file mode 100644
+index 0000000000..c66248be66
+--- /dev/null
++++ b/supercompiler.fp
+@@ -0,0 +1,33 @@
++.|08e33edf20e2274b1266b4809ecea5678014b0a3
++ghc-tarballs|01a8e25294fd5d501e0db115debafd4fd61970a0
++libraries/Cabal|9e030da8a6e5942fc6244fbe33ed7ccee0eb07a8
++libraries/Win32|1eeb98baf338f81dc6001c7a2e9b05c95b7971a8
++libraries/array|8dcd15240a9c2ba142fcbd31f597b51cf2f560bf
++libraries/base|89e58b99fa48c80724c7d7d5559b171125d59d71
++libraries/binary|080f85c7b0ccc59a579b85d50132d62cb469b146
++libraries/bytestring|b3cdac4bbdcfbe4ca384076c20ebd0def534f528
++libraries/containers|fff28d7c1cd8e6e39aa5e099c6e5611ff1b95a19
++libraries/deepseq|eded7da15fc03cfdd3be4bc2661c658eaa7c6d68
++libraries/directory|d7be79872eca869d7f127a14a7dc49a8edad50ba
++libraries/filepath|efa44de9abfab7fe3053c3d2ca6be965703dd04d
++libraries/ghc-prim|418a919080c099d941b59d5d08fad72b0b4b3da5
++libraries/haskeline|cfd0a05d053cad6417264f22c10540dc4c7446bd
++libraries/haskell2010|d1e29ce3a56d6a34bd82e9e7ccd396b6bec963ed
++libraries/haskell98|4c71385d929b11dca8d2f41a96ca8a4b5aad9c3e
++libraries/hoopl|4b2fa9c4b6af00ef6759ff62a2b3efa7d9a8e59c
++libraries/hpc|dd3ba275911a897c421ca084057aad76c38bd4a5
++libraries/integer-gmp|d95eb887c0e8ed012065e2fd60c234a8db0eebf7
++libraries/integer-simple|bc04c4f51a3edcd7145a66ffac796adb2eed4a11
++libraries/mtl|a41470c1890073e678f0dca2a9ef4c02d55bf7c6
++libraries/old-locale|b512c2988a36df94486ab55d7c7c10be9439b09c
++libraries/old-time|bf84632130de935f63a52bfcf934dda7014fd960
++libraries/pretty|f615a6aeb4abcdbfbfab67b0a82cef9a9a65ec49
++libraries/process|d26eba94031fb129c40e6441f9960f315b1010f9
++libraries/template-haskell|0b1984c2554263056e847be2de48436e02e70364
++libraries/terminfo|baec6aff59d13ba294b370f9563e8068706392ce
++libraries/transformers|a59fb93860f84ccd44178dcbbb82cfea7e02cd07
++libraries/unix|7259fcd6a69ab188041efd28626b5ea474f4e8a6
++libraries/utf8-string|ec2b85940a256dbc8771e5e2065ca8f76cc802d0
++libraries/xhtml|aca0f6eeaea0fbacb492e9a5c1bb4ec35a1b70f7
++utils/haddock|2a931d32cfdbd20d4da0cff6415a3aaf47823938
++utils/hsc2hs|385fc7dbeaf957976017a6159128bb697bbafa75
+-- 
+2.21.0 (Apple Git-122.2)
+

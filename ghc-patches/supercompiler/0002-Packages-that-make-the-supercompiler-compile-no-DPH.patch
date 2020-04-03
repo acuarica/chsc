@@ -1,0 +1,880 @@
+From e230ed218ddf83e52398fc2b3ae6093b533ebb4f Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Mon, 6 Mar 2017 20:55:25 +0100
+Subject: [PATCH 2/8] Packages that make the supercompiler compile (no DPH)
+
+---
+ compiler/ghci/Linker.lhs |   2 +-
+ ghc.mk                   |   7 +-
+ log-all                  | 815 +++++++++++++++++++++++++++++++++++++++
+ packages                 |   4 -
+ 4 files changed, 817 insertions(+), 11 deletions(-)
+ create mode 100755 log-all
+
+diff --git a/compiler/ghci/Linker.lhs b/compiler/ghci/Linker.lhs
+index f91ee14de7..46845dfbd9 100644
+--- a/compiler/ghci/Linker.lhs
++++ b/compiler/ghci/Linker.lhs
+@@ -64,7 +64,7 @@ import Control.Concurrent.MVar
+ 
+ import System.FilePath
+ import System.IO
+-import System.Directory
++import System.Directory hiding (findFile)
+ 
+ import Distribution.Package hiding (depends, PackageId)
+ 
+diff --git a/ghc.mk b/ghc.mk
+index 195310bef6..11221a5340 100644
+--- a/ghc.mk
++++ b/ghc.mk
+@@ -311,12 +311,7 @@ endif
+ # Packages that are built but not installed
+ PKGS_THAT_ARE_INTREE_ONLY := haskeline mtl terminfo utf8-string xhtml
+ 
+-PKGS_THAT_ARE_DPH := \
+-    dph/dph-base \
+-    dph/dph-prim-interface dph/dph-prim-seq dph/dph-prim-par \
+-    dph/dph-lifted-base \
+-    dph/dph-lifted-boxed dph/dph-lifted-copy dph/dph-lifted-vseg \
+-    vector primitive random
++PKGS_THAT_ARE_DPH := vector primitive random
+ 
+ # Packages that, if present, must be built by the stage2 compiler,
+ # because they use TH and/or annotations, or depend on other stage2
+diff --git a/log-all b/log-all
+new file mode 100755
+index 0000000000..5aa2e12c12
+--- /dev/null
++++ b/log-all
+@@ -0,0 +1,815 @@
++#!/usr/bin/perl -w
++
++use strict;
++use Cwd;
++
++$| = 1; # autoflush stdout after each print, to avoid output after die
++
++my $defaultrepo;
++my @packages;
++my $verbose = 2;
++my $try_to_resume = 0;
++my $ignore_failure = 0;
++my $checked_out_flag = 0; # NOT the opposite of bare_flag (describes remote repo state)
++my $get_mode;
++my $bare_flag = ""; # NOT the opposite of checked_out_flag (describes local repo state)
++
++my %tags;
++
++# Figure out where to get the other repositories from.
++sub getrepo {
++    my $repo;
++
++    if (defined($defaultrepo)) {
++        $repo = $defaultrepo;
++        chomp $repo;
++    } else {
++        # Figure out where to get the other repositories from,
++        # based on where this GHC repo came from.
++        my $git_dir = $bare_flag ? "--git-dir=ghc.git" : "";
++        my $branch  = `git $git_dir branch | grep "\* " | sed "s/^\* //"`; chomp $branch;
++        my $remote  = `git $git_dir config branch.$branch.remote`;         chomp $remote;
++        if ($remote eq "") {
++            # remotes are not mandatory for branches (e.g. not recorded by default for bare repos)
++            $remote = "origin";
++        }
++        $repo       = `git $git_dir config remote.$remote.url`;            chomp $repo;
++    }
++
++    my $repo_base;
++    my $checked_out_tree;
++
++    if ($repo =~ /^...*:/) {
++        # HTTP or SSH
++        # Above regex says "at least two chars before the :", to avoid
++        # catching Win32 drives ("C:\").
++        $repo_base = $repo;
++
++        # --checked-out is needed if you want to use a checked-out repo
++        # over SSH or HTTP
++        if ($checked_out_flag) {
++            $checked_out_tree = 1;
++        } else {
++            $checked_out_tree = 0;
++        }
++
++        # Don't drop the last part of the path if specified with -r, as
++        # it expects repos of the form:
++        #
++        #   http://darcs.haskell.org
++        #
++        # rather than
++        #
++        #   http://darcs.haskell.org/ghc
++        #
++        if (!$defaultrepo) {
++            $repo_base =~ s#/[^/]+/?$##;
++        }
++    }
++    elsif ($repo =~ /^\/|\.\.\/|.:(\/|\\)/) {
++        # Local filesystem, either absolute (C:/ or /) or relative (../) path
++        $repo_base = $repo;
++        if (-f "$repo/HEAD") {
++            # assume a local mirror:
++            $checked_out_tree = 0;
++            $repo_base =~ s#/[^/]+/?$##;
++        } elsif (-d "$repo/ghc.git") {
++            # assume a local mirror:
++            $checked_out_tree = 0;
++        } else {
++            # assume a checked-out tree:
++            $checked_out_tree = 1;
++        }
++    }
++    else {
++        die "Couldn't work out repo";
++    }
++
++    return $repo_base, $checked_out_tree;
++}
++
++sub parsePackages {
++    my @repos;
++    my $lineNum;
++
++    open IN, "< packages.conf"
++        or open IN, "< packages" # clashes with packages directory when using --bare
++        or die "Can't open packages file (or packages.conf)";
++    @repos = <IN>;
++    close IN;
++
++    @packages = ();
++    $lineNum = 0;
++    foreach (@repos) {
++        chomp;
++        $lineNum++;
++        if (/^([^# ]+) +([^ ]+) +([^ ]+) +([^ ]+)$/) {
++            my %line;
++            $line{"localpath"}  = $1;
++            $line{"tag"}        = $2;
++            $line{"remotepath"} = $3;
++            $line{"vcs"}        = $4;
++            push @packages, \%line;
++        }
++        elsif (! /^(#.*)?$/) {
++            die "Bad content on line $lineNum of packages file: $_";
++        }
++    }
++}
++
++sub message {
++    if ($verbose >= 2) {
++        print "@_\n";
++    }
++}
++
++sub warning {
++    if ($verbose >= 1) {
++        print "warning: @_\n";
++    }
++}
++
++sub gitNewWorkdir {
++    my $dir = shift;
++    my $target = shift;
++    my $target_dir = "$target/$dir";
++    my $pwd;
++
++    if ($dir eq '.') {
++        message "== running git-new-workdir . $target_dir @_";
++    } else {
++        message "== $dir: running git-new-workdir . $target_dir @_";
++        $pwd = getcwd();
++        chdir($dir);
++    }
++
++    system ("git-new-workdir", ".", $target_dir, @_) == 0
++        or $ignore_failure
++        or die "git-new-workdir failed: $?";
++
++    if ($dir ne '.') {
++        chdir($pwd);
++    }
++}
++
++sub scm {
++    my $dir = shift;
++    my $scm = shift;
++    my $pwd;
++
++    if ($dir eq '.') {
++        #message "== running $scm @_";
++    } else {
++#        message "== $dir: running $scm @_";
++        $pwd = getcwd();
++        chdir($dir);
++    }
++
++    my $output = `$scm @_`;
++
++        message "$dir|$output";
++  #  system ($scm, @_) == 0
++   #     or $ignore_failure
++    #    or die "$scm failed: $?";
++
++    if ($dir ne '.') {
++        chdir($pwd);
++    }
++}
++
++sub scmall {
++    my $command = shift;
++
++    my $localpath;
++    my $tag;
++    my $remotepath;
++    my $scm;
++    my $line;
++    my $branch_name;
++    my $subcommand;
++
++    my $path;
++    my $wd_before = getcwd;
++
++    my $pwd;
++    my @args;
++
++    my $started;
++    my $doing;
++    my $start_repo;
++
++    my ($repo_base, $checked_out_tree) = getrepo();
++
++    my $is_github_repo = $repo_base =~ m/(git@|git:\/\/|https:\/\/)github.com/;
++
++    parsePackages;
++
++    @args = ();
++
++    if ($command =~ /^remote$/) {
++        while (@_ > 0 && $_[0] =~ /^-/) {
++            push(@args,shift);
++        }
++        if (@_ < 1) { help(1); }
++        $subcommand = shift;
++        if ($subcommand ne 'add' && $subcommand ne 'rm' && $subcommand ne 'set-url') {
++            help(1);
++        }
++        while (@_ > 0 && $_[0] =~ /^-/) {
++            push(@args,shift);
++        }
++        if (($subcommand eq 'add' || $subcommand eq 'rm') && @_ < 1) {
++            help(1);
++        } elsif (@_ < 1) { # set-url
++            $branch_name = 'origin';
++        } else {
++            $branch_name = shift;
++        }
++    } elsif ($command eq 'new') {
++        if (@_ < 1) {
++            $branch_name = 'origin';
++        } else {
++            $branch_name = shift;
++        }
++    }
++
++    push(@args, @_);
++
++    # $doing is a good enough approximation to what we are doing that
++    # we can use it to check that --resume is resuming the right command
++    $doing = join(" ", ($command, @args));
++    $started = 1;
++    if ($try_to_resume && -f "resume") {
++        my $what;
++        open RESUME, "< resume"
++            or die "Can't open resume file";
++        $start_repo = <RESUME>;
++        chomp $start_repo;
++        $what = <RESUME>;
++        chomp $what;
++        close RESUME;
++        if ($what eq $doing) {
++            $started = 0;
++        }
++    }
++
++    for $line (@packages) {
++        $tag        = $$line{"tag"};
++        $scm        = $$line{"vcs"};
++        # Use the "remote" structure for bare git repositories
++        $localpath  = ($bare_flag && $scm eq "git") ?
++                      $$line{"remotepath"} : $$line{"localpath"};
++        $remotepath = ($checked_out_tree) ?
++                      $$line{"localpath"}  : $$line{"remotepath"};
++
++        if (!$started) {
++            if ($start_repo eq $localpath) {
++                $started = 1;
++            }
++            else {
++                next;
++            }
++        }
++
++        open RESUME, "> resume.tmp";
++        print RESUME "$localpath\n";
++        print RESUME "$doing\n";
++        close RESUME;
++        rename "resume.tmp", "resume";
++
++        # Check the SCM is OK as early as possible
++        die "Unknown SCM: $scm" if (($scm ne "darcs") and ($scm ne "git"));
++
++        # We can't create directories on GitHub, so we translate
++        # "packages/foo" into "package-foo".
++        if ($is_github_repo) {
++            $remotepath =~ s/\//-/;
++        }
++
++        # Construct the path for this package in the repo we pulled from
++        $path = "$repo_base/$remotepath";
++
++        if ($command =~ /^(?:g|ge|get)$/) {
++            # Skip any repositories we have not included the tag for
++            if (not defined($tags{$tag})) {
++                $tags{$tag} = 0;
++            }
++            if ($tags{$tag} == 0) {
++                next;
++            }
++
++            if (-d $localpath) {
++                warning("$localpath already present; omitting")
++                    if $localpath ne ".";
++                if ($scm eq "git") {
++                    scm ($localpath, $scm, "config", "core.ignorecase", "true");
++                }
++                next;
++            }
++
++            # Note that we use "." as the path, as $localpath
++            # doesn't exist yet.
++            if ($scm eq "darcs") {
++                # The first time round the loop, default the get-mode
++                if (not defined($get_mode)) {
++                    warning("adding --partial, to override use --complete");
++                    $get_mode = "--partial";
++                }
++                scm (".", $scm, "get", $get_mode, $path, $localpath, @args);
++            }
++            else {
++                my @argsWithBare = @args;
++                push @argsWithBare, $bare_flag if $bare_flag;
++                scm (".", $scm, "clone", $path, $localpath, @argsWithBare);
++                scm ($localpath, $scm, "config", "core.ignorecase", "true");
++            }
++            next;
++        }
++
++        my $darcs_repo_present = 1 if -d "$localpath/_darcs";
++        my $git_repo_present = 1 if -d "$localpath/.git" || ($bare_flag && -d "$localpath");
++        if ($darcs_repo_present) {
++            if ($git_repo_present) {
++                die "Found both _darcs and .git in $localpath";
++            }
++            $scm = "darcs";
++        } elsif ($git_repo_present) {
++            $scm = "git";
++        } elsif ($tag eq "") {
++            die "Required repo $localpath is missing";
++        } else {
++             message "== $localpath repo not present; skipping";
++             next;
++        }
++
++        # Work out the arguments we should give to the SCM
++        if ($command =~ /^(?:w|wh|wha|what|whats|whatsn|whatsne|whatsnew|status)$/) {
++            if ($scm eq "darcs") {
++                $command = "whatsnew";
++            }
++            elsif ($scm eq "git") {
++                $command = "status";
++            }
++            else {
++                die "Unknown scm";
++            }
++
++            # Hack around 'darcs whatsnew' failing if there are no changes
++            $ignore_failure = 1;
++            scm ($localpath, $scm, $command, @args);
++        }
++        elsif ($command =~ /^commit$/) {
++            # git fails if there is nothing to commit, so ignore failures
++            $ignore_failure = 1;
++            scm ($localpath, $scm, "commit", @args);
++        }
++        elsif ($command =~ /^(?:pus|push)$/) {
++            scm ($localpath, $scm, "push", @args);
++        }
++        elsif ($command =~ /^(?:pul|pull)$/) {
++            scm ($localpath, $scm, "pull", @args);
++        }
++        elsif ($command =~ /^(?:new-workdir)$/) {
++            gitNewWorkdir ($localpath, @args);
++        }
++        elsif ($command =~ /^(?:s|se|sen|send)$/) {
++            if ($scm eq "darcs") {
++                $command = "send";
++            }
++            elsif ($scm eq "git") {
++                $command = "send-email";
++            }
++            else {
++                die "Unknown scm";
++            }
++            scm ($localpath, $scm, $command, @args);
++        }
++        elsif ($command =~ /^fetch$/) {
++            scm ($localpath, $scm, "fetch", @args);
++        }
++        elsif ($command =~ /^new$/) {
++            my @scm_args = ("log", "$branch_name..");
++            scm ($localpath, $scm, @scm_args, @args);
++        }
++        elsif ($command =~ /^log$/) {
++            scm ($localpath, $scm, "--no-pager","log", @args);
++        }
++        elsif ($command =~ /^remote$/) {
++            my @scm_args;
++            $ignore_failure = 1;
++            if ($subcommand eq 'add') {
++                @scm_args = ("remote", "add", $branch_name, $path);
++            } elsif ($subcommand eq 'rm') {
++                @scm_args = ("remote", "rm", $branch_name);
++            } elsif ($subcommand eq 'set-url') {
++                @scm_args = ("remote", "set-url", $branch_name, $path);
++            }
++            scm ($localpath, $scm, @scm_args, @args);
++        }
++        elsif ($command =~ /^checkout$/) {
++            # Not all repos are necessarily branched, so ignore failure
++            $ignore_failure = 1;
++            scm ($localpath, $scm, "checkout", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^grep$/) {
++            # Hack around 'git grep' failing if there are no matches
++            $ignore_failure = 1;
++            scm ($localpath, $scm, "grep", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^diff$/) {
++            scm ($localpath, $scm, "diff", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^clean$/) {
++            scm ($localpath, $scm, "clean", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^reset$/) {
++            scm ($localpath, $scm, "reset", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^branch$/) {
++            scm ($localpath, $scm, "branch", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^config$/) {
++            scm ($localpath, $scm, "config", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^repack$/) {
++            scm ($localpath, $scm, "repack", @args)
++                if $scm eq "git"
++        }
++        elsif ($command =~ /^format-patch$/) {
++            scm ($localpath, $scm, "format-patch", @args)
++                if $scm eq "git"
++        }
++        elsif ($command =~ /^gc$/) {
++            scm ($localpath, $scm, "gc", @args)
++                unless $scm eq "darcs";
++        }
++        elsif ($command =~ /^tag$/) {
++            scm ($localpath, $scm, "tag", @args);
++        }
++        else {
++            die "Unknown command: $command";
++        }
++    }
++
++    unlink "resume";
++}
++
++sub help
++{
++        my $exit = shift;
++
++        # Get the built in help
++        my $help = <<END;
++Usage:
++
++./sync-all [-q] [-s] [--ignore-failure] [-r repo] [--checked-out] [--bare]
++           [--nofib] [--extra] [--testsuite] [--no-dph] [--resume]
++           cmd [git flags]
++
++Applies the command "cmd" to each repository in the tree.
++
++A full repository tree is obtained by first cloning the ghc
++repository, then getting the subrepositories with "sync-all get":
++
++  \$ git clone http://darcs.haskell.org/ghc.git
++  \$ cd ghc
++  \$ ./sync-all get
++
++After this, "./sync-all pull" will pull from the original repository
++tree.
++
++A remote pointing to another local repository tree can be added like
++this:
++
++  \$ ./sync-all -r /path/to/ghc remote add otherlocal
++
++and then we can pull from this other tree with
++
++  \$ ./sync-all pull otherlocal
++
++-------------- Commands -----------------
++get
++
++    Clones all sub-repositories from the same place that the ghc
++    repository was cloned from. See "which repos to use" below
++    for details of how the subrepositories are laid out.
++
++    There are various --<package-tag> options that can be given
++    before "get" that enable extra repositories. The full list is
++    given at the end of this help. For example:
++
++    ./sync-all --testsuite get
++
++    would get the testsuite repository in addition to the usual set of
++    subrepositories.
++
++remote add <remote-name>
++remote rm <remote-name>
++remote set-url [--push] <remote-name>
++
++    Runs a "git remote" command on each subrepository, adjusting the
++    repository location in each case appropriately. For example, to
++    add a new remote pointing to the upstream repositories:
++
++    ./sync-all -r http://darcs.haskell.org/ remote add upstream
++
++    The -r flag points to the root of the repository tree (see "which
++    repos to use" below). For a repository on the local filesystem it
++    would point to the ghc repository, and for a remote repository it
++    points to the directory containing "ghc.git".
++
++These commands just run the equivalent git command on each repository, passing
++any extra arguments to git:
++
++  branch
++  checkout
++  clean
++  commit
++  config
++  diff
++  fetch
++  format-patch
++  gc
++  grep
++  log
++  new
++  new-workdir
++  pull
++  push
++  repack
++  reset
++  send
++  status
++  tag
++
++-------------- Flags -------------------
++These flags are given *before* the command and modify the way sync-all behaves.
++Flags given *after* the command are passed to git.
++
++  -q says to be quiet, and -s to be silent.
++
++  --resume will restart a command that failed, from the repo at which it
++  failed. This means you don't need to wait while, e.g., "pull" goes through
++  all the repos it's just pulled, and tries to pull them again.
++
++  --ignore-failure says to ignore errors and move on to the next repository
++
++  -r repo says to use repo as the location of package repositories
++
++  --checked-out says that the remote repo is in checked-out layout, as opposed
++  to the layout used for the main repo. By default a repo on the local
++  filesystem is assumed to be checked-out, and repos accessed via HTTP or SSH
++  are assumed to be in the main repo layout; use --checked-out to override the
++  latter.
++
++  --bare says that the local repo is in bare layout, same as the main repo. It
++  also means that these repos are bare. You only have to use this flag if you
++  don't have a bare ghc.git in the current directory and would like to 'get'
++  all of the repos bare. Requires packages.conf to be present in the current
++  directory (a renamed packages file from the main ghc repo).
++
++  Note: --checked-out and --bare flags are NOT the opposite of each other.
++        --checked-out: describes the layout of the remote repository tree.
++        --bare:        describes the layout of the local repository tree.
++
++  --nofib also clones the nofib benchmark suite
++
++  --testsuite also clones the ghc testsuite 
++
++  --extra also clone some extra library packages
++
++  --no-dph avoids cloning the dph pacakges
++
++
++------------ Checking out a branch -------------
++To check out a branch you can run the following command:
++
++  \$ ./sync-all checkout ghc-7.4
++
++
++------------ Which repos to use -------------
++sync-all uses the following algorithm to decide which remote repos to use
++
++It always computes the remote repos from a single base, <repo_base> How is
++<repo_base> set? If you say "-r repo", then that's <repo_base> otherwise
++<repo_base> is set by asking git where the ghc repo came from, and removing the
++last component (e.g. /ghc.git/ or /ghc/).
++
++Then sync-all iterates over the package found in the file ./packages; see that
++file for a description of the contents.
++
++If <repo_base> looks like a local filesystem path, or if you give the
++--checked-out flag, sync-all works on repos of form:
++
++  <repo_base>/<local-path>
++
++otherwise sync-all works on repos of form:
++
++  <repo_base>/<remote-path>
++
++This logic lets you say
++  both    sync-all -r http://darcs.haskell.org/ghc-6.12 remote add ghc-6.12
++  and     sync-all -r ../working remote add working
++The latter is called a "checked-out tree".
++
++sync-all *ignores* the defaultrepo of all repos other than the root one. So the
++remote repos must be laid out in one of the two formats given by <local-path>
++and <remote-path> in the file 'packages'.
++
++Available package-tags are:
++END
++
++        # Collect all the tags in the packages file
++        my %available_tags;
++        open IN, "< packages.conf"
++            or open IN, "< packages" # clashes with packages directory when using --bare
++            or die "Can't open packages file (or packages.conf)";
++        while (<IN>) {
++            chomp;
++            if (/^([^# ]+) +(?:([^ ]+) +)?([^ ]+) +([^ ]+)/) {
++                if (defined($2) && $2 ne "-") {
++                    $available_tags{$2} = 1;
++                }
++            }
++            elsif (! /^(#.*)?$/) {
++                die "Bad line: $_";
++            }
++        }
++        close IN;
++
++        # Show those tags and the help text
++        my @available_tags = keys %available_tags;
++        print "$help@available_tags\n\n";
++        exit $exit;
++}
++
++sub main {
++
++    $tags{"-"} = 1;
++    $tags{"dph"} = 1;
++
++    while ($#_ ne -1) {
++        my $arg = shift;
++        # We handle -q here as well as lower down as we need to skip over it
++        # if it comes before the source-control command
++        if ($arg eq "-q") {
++            $verbose = 1;
++        }
++        elsif ($arg eq "-s") {
++            $verbose = 0;
++        }
++        elsif ($arg eq "-r") {
++            $defaultrepo = shift;
++        }
++        elsif ($arg eq "--resume") {
++            $try_to_resume = 1;
++        }
++        elsif ($arg eq "--ignore-failure") {
++            $ignore_failure = 1;
++        }
++        elsif ($arg eq "--complete" || $arg eq "--partial") {
++            $get_mode = $arg;
++        }
++        # Use --checked-out if the _remote_ repos are a checked-out tree,
++        # rather than the master trees.
++        elsif ($arg eq "--checked-out") {
++            $checked_out_flag = 1;
++        }
++        # Use --bare if the _local_ repos are bare repos,
++        # rather than a checked-out tree.
++        elsif ($arg eq "--bare") {
++            $bare_flag = $arg;
++        }
++        elsif ($arg eq "--help") {
++            help(0);
++        }
++        # --<tag> says we grab the libs tagged 'tag' with
++        # 'get'. It has no effect on the other commands.
++        elsif ($arg =~ m/^--no-(.*)$/) {
++            $tags{$1} = 0;
++        }
++        elsif ($arg =~ m/^--(.*)$/) {
++            $tags{$1} = 1;
++        }
++        else {
++            unshift @_, $arg;
++            if (grep /^-q$/, @_) {
++                $verbose = 1;
++            }
++            last;
++        }
++    }
++
++    # check for ghc repositories in cwd
++    my $checked_out_found = 1 if (-d ".git" && -d "compiler");
++    my $bare_found = 1 if (-d "ghc.git");
++
++    if ($bare_flag && ! $bare_found && ! $defaultrepo) {
++        die "error: bare repository ghc.git not found.\n"
++          . "       Either clone a bare ghc repo first or specify the repo location. E.g.:\n"
++          . "       ./sync-all --bare [--testsuite --nofib --extra] -r http://darcs.haskell.org/ get\n"
++    }
++    elsif ($bare_found) {
++        $bare_flag = "--bare";
++    }
++    elsif (! $bare_flag && ! $checked_out_found) {
++        die "error: sync-all must be run from the top level of the ghc tree.";
++    }
++
++    if ($#_ eq -1) {
++        help(1);
++    }
++    else {
++        # Give the command and rest of the arguments to the main loop
++        scmall @_;
++    }
++}
++
++END {
++    my $ec = $?;
++    my $pwd = getcwd();
++
++    message "== Checking for old haddock repo";
++    if (-d "utils/haddock/.git") {
++        chdir("utils/haddock");
++        if ((system "git log -1 87e2ca11c3d1b1bc49900fba0b5c5c6f85650718 > /dev/null 2> /dev/null") == 0) {
++            print <<EOF;
++============================
++ATTENTION!
++
++You have an old haddock repository in your GHC tree!
++
++Please remove it (e.g. "rm -r utils/haddock"), and then run
++"./sync-all get" to get the new repository.
++============================
++EOF
++        }
++        chdir($pwd);
++    }
++
++    message "== Checking for old binary repo";
++    if (-d "libraries/binary/.git") {
++        chdir("libraries/binary");
++        if ((system "git log -1 749ac0efbde3b14901417364a872796598747aaf > /dev/null 2> /dev/null") == 0) {
++            print <<EOF;
++============================
++ATTENTION!
++
++You have an old binary repository in your GHC tree!
++
++Please remove it (e.g. "rm -r libraries/binary"), and then run
++"./sync-all get" to get the new repository.
++============================
++EOF
++        }
++        chdir($pwd);
++    }
++
++    message "== Checking for old mtl repo";
++    if (-d "libraries/mtl/.git") {
++        chdir("libraries/mtl");
++        if ((system "git log -1 c67d8f7247c612dc35242bc67e616f7ea35eadb9 > /dev/null 2> /dev/null") == 0) {
++            print <<EOF;
++============================
++ATTENTION!
++
++You have an old mtl repository in your GHC tree!
++
++Please remove it (e.g. "rm -r libraries/mtl"), and then run
++"./sync-all get" to get the new repository.
++============================
++EOF
++        }
++        chdir($pwd);
++    }
++
++    message "== Checking for old Cabal repo";
++    if (-d "libraries/Cabal/.git") {
++        chdir("libraries/Cabal");
++        if ((system "git log -1 c8ebd66a32865f72ae03ee0663c62df3d77f08fe > /dev/null 2> /dev/null") == 0) {
++            print <<EOF;
++============================
++ATTENTION!
++
++You have an old Cabal repository in your GHC tree!
++
++Please remove it (e.g. "rm -r libraries/Cabal"), and then run
++"./sync-all get" to get the new repository.
++============================
++EOF
++        }
++        chdir($pwd);
++    }
++
++    $? = $ec;
++}
++
++main(@ARGV);
++
+diff --git a/packages b/packages
+index e565bb4cfc..7d7ce3c483 100644
+--- a/packages
++++ b/packages
+@@ -79,7 +79,3 @@ testsuite                       testsuite   testsuite.git
+ nofib                           nofib       nofib.git                           git
+ libraries/parallel              extra       packages/parallel.git               git
+ libraries/stm                   extra       packages/stm.git                    git
+-libraries/random                dph         packages/random.git                 git
+-libraries/primitive             dph         packages/primitive.git              git
+-libraries/vector                dph         packages/vector.git                 git
+-libraries/dph                   dph         packages/dph.git                    git
+-- 
+2.21.0 (Apple Git-122.2)
+

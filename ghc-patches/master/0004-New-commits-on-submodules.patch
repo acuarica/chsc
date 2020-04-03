@@ -1,0 +1,83 @@
+From 1662e9cf93589259d08293dd4fcad3dabe0d80f8 Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Sun, 29 Oct 2017 14:22:38 +0100
+Subject: [PATCH 04/10] New commits on submodules.
+
+---
+ .arc-linters/arcanist-external-json-linter | 2 +-
+ libffi-tarballs                            | 2 +-
+ libraries/Cabal                            | 2 +-
+ libraries/Win32                            | 2 +-
+ libraries/parallel                         | 2 +-
+ libraries/process                          | 2 +-
+ nofib                                      | 2 +-
+ utils/haddock                              | 2 +-
+ utils/hsc2hs                               | 2 +-
+ 9 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/.arc-linters/arcanist-external-json-linter b/.arc-linters/arcanist-external-json-linter
+index f640b1582f..957f9e4e8e 160000
+--- a/.arc-linters/arcanist-external-json-linter
++++ b/.arc-linters/arcanist-external-json-linter
+@@ -1 +1 @@
+-Subproject commit f640b1582f799d16ff500c5f456f9d1037a432bb
++Subproject commit 957f9e4e8eb422dcb72f02f07767a1ed5969baab
+diff --git a/libffi-tarballs b/libffi-tarballs
+index 05eae951c0..6f5a054569 160000
+--- a/libffi-tarballs
++++ b/libffi-tarballs
+@@ -1 +1 @@
+-Subproject commit 05eae951c0d8e1b71e5c4fa5c1261a4c0ab68c07
++Subproject commit 6f5a05456900ec39092ffc5602ee9e4c94359f10
+diff --git a/libraries/Cabal b/libraries/Cabal
+index 4a43780e45..52a7d51e23 160000
+--- a/libraries/Cabal
++++ b/libraries/Cabal
+@@ -1 +1 @@
+-Subproject commit 4a43780e45ef5416788fc68bce64da2bc552cdac
++Subproject commit 52a7d51e239dce1791b7d1f33590239a6fba0cd5
+diff --git a/libraries/Win32 b/libraries/Win32
+index 0f869f6bf6..4a95d9585f 160000
+--- a/libraries/Win32
++++ b/libraries/Win32
+@@ -1 +1 @@
+-Subproject commit 0f869f6bf66e227d566947fdbf0886c10291d80d
++Subproject commit 4a95d9585f88d5be4a4c223450643284d2e9f9ed
+diff --git a/libraries/parallel b/libraries/parallel
+index 998f55d68b..fc417be3b1 160000
+--- a/libraries/parallel
++++ b/libraries/parallel
+@@ -1 +1 @@
+-Subproject commit 998f55d68b2f9852ce62a48450e1991ef4fce9fb
++Subproject commit fc417be3b19f84e8e820e4b92d26e0a25c58d1c2
+diff --git a/libraries/process b/libraries/process
+index 4f6e0a336c..2fb7e73977 160000
+--- a/libraries/process
++++ b/libraries/process
+@@ -1 +1 @@
+-Subproject commit 4f6e0a336cb9a3517415c7279888667b9284d88f
++Subproject commit 2fb7e739771f4a899a12b45f8b392e4874616b89
+diff --git a/nofib b/nofib
+index 5748d42820..ef4f8dc8ef 160000
+--- a/nofib
++++ b/nofib
+@@ -1 +1 @@
+-Subproject commit 5748d428204ea0552f70b2981eaf30d4a5cfd3e9
++Subproject commit ef4f8dc8ef51ce3353b76a0761c1a09e5ff30b67
+diff --git a/utils/haddock b/utils/haddock
+index 8e88615a23..0e82a0b3aa 160000
+--- a/utils/haddock
++++ b/utils/haddock
+@@ -1 +1 @@
+-Subproject commit 8e88615a23a9f1980a55bd1b3ef9dcc938d95237
++Subproject commit 0e82a0b3aa78af13f5ef52a7d9bac9d0c4e94e02
+diff --git a/utils/hsc2hs b/utils/hsc2hs
+index ecdac062b5..cdcf4f0835 160000
+--- a/utils/hsc2hs
++++ b/utils/hsc2hs
+@@ -1 +1 @@
+-Subproject commit ecdac062b5cf1d284906487849c56f4e149b3c8e
++Subproject commit cdcf4f0835e9afa0309fae584d99c40a59795016
+-- 
+2.21.0 (Apple Git-122.2)
+

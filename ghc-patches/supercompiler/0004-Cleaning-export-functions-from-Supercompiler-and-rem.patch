@@ -1,0 +1,115 @@
+From 262d54c368e49d10732ff4cd4a2bed07b49edfcc Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Tue, 7 Mar 2017 05:13:58 +0100
+Subject: [PATCH 4/8] Cleaning export functions from Supercompiler and removing
+ plugin (unused) files
+
+---
+ compiler/supercompile/Supercompile.hs        |  7 ++-
+ compiler/supercompile/chsc-plugin.cabal      | 49 --------------------
+ compiler/supercompile/install-plugin-inplace |  8 ----
+ 3 files changed, 5 insertions(+), 59 deletions(-)
+ delete mode 100644 compiler/supercompile/chsc-plugin.cabal
+ delete mode 100755 compiler/supercompile/install-plugin-inplace
+
+diff --git a/compiler/supercompile/Supercompile.hs b/compiler/supercompile/Supercompile.hs
+index ae08183be9..b9c55ebda2 100644
+--- a/compiler/supercompile/Supercompile.hs
++++ b/compiler/supercompile/Supercompile.hs
+@@ -1,4 +1,6 @@
+-module Supercompile (supercompileProgram, supercompileProgramSelective) where
++-- module Supercompile (supercompileProgram, supercompileProgramSelective) where
++-- Used by SimplCore.lhs
++module Supercompile (supercompileProgram) where
+ 
+ #include "HsVersions.h"
+ 
+@@ -282,6 +284,7 @@ supercompile {-mod_finder-} e = -- liftM (termToCoreExpr . snd) $
+         -- just like we would if we imported a SUPERINLINABLE binding
+         e' = superinlinableLexically mODULE_SUPERINLINABLE $ runParseM anfUniqSupply' $ coreExprToTerm e
+ 
++-- pprPanic "supercompileProgram" (ppr binds)
+ supercompileProgram :: [CoreBind] -> IO [CoreBind]
+ supercompileProgram binds = do
+     {-mod_finder <- mkModuleFinder-}
+@@ -303,7 +306,7 @@ mkModuleFinder = do
+ -}
+ 
+ supercompileProgramSelective :: {-(Module -> ModIface) ->-} (Id -> Bool) -> [CoreBind] -> IO [CoreBind]
+-supercompileProgramSelective {-mod_finder-} should_sc binds = liftM (\e' -> [Rec $ (x, e') : rebuild x]) (supercompile {-mod_finder-} e)
++supercompileProgramSelective {-mod_finder-} should_sc binds = print "supercompileProgramSelective" >> liftM (\e' -> [Rec $ (x, e') : rebuild x]) (supercompile {-mod_finder-} e)
+   where x = mkSysLocal (fsLit "sc") topUnique (exprType e)
+         -- NB: we assume no-shadowing at top level, which is probably reasonable
+         flat_binds = flattenBinds binds
+diff --git a/compiler/supercompile/chsc-plugin.cabal b/compiler/supercompile/chsc-plugin.cabal
+deleted file mode 100644
+index 752a33b23a..0000000000
+--- a/compiler/supercompile/chsc-plugin.cabal
++++ /dev/null
+@@ -1,49 +0,0 @@
+-Name:           chsc-plugin
+-Version:        1.0
+-License:        BSD3
+-Synopsis:       A plugin for GHC that performs supercompilation.
+-Cabal-Version:  >= 1.2
+-Build-Type:     Simple
+-Author:         Max Bolingbroke <batterseapower@hotmail.com>
+-Maintainer:     Max Bolingbroke <batterseapower@hotmail.com>
+-
+-Source-Repository head
+-  type:     git
+-  location: http://darcs.haskell.org/ghc.git
+-  branch:   supercompiler
+-
+-Library
+-    Exposed-Modules:
+-        CHSC
+-    Other-Modules:
+-        Supercompile.Core.FreeVars
+-        Supercompile.Core.Renaming
+-        Supercompile.Core.Size
+-        Supercompile.Core.Syntax
+-        Supercompile.Core.Tag
+-        Supercompile.Drive.Match
+-        Supercompile.Drive.Process
+-        Supercompile.Drive.Split
+-        Supercompile.Evaluator.Deeds
+-        Supercompile.Evaluator.Evaluate
+-        Supercompile.Evaluator.FreeVars
+-        Supercompile.Evaluator.Residualise
+-        Supercompile.Evaluator.Syntax
+-        Supercompile.StaticFlags
+-        Supercompile.Termination.Combinators
+-        Supercompile.Termination.Generaliser
+-        Supercompile.Termination.TagBag
+-        Supercompile.Utilities
+-        Supercompile
+-    Extensions:
+-        CPP,
+-        PatternGuards,
+-        ExistentialQuantification,
+-        ScopedTypeVariables,
+-        FlexibleInstances,
+-        RankNTypes,
+-        DeriveDataTypeable
+-    Build-Depends:
+-        base >= 4.3 && < 4.4,
+-        containers >= 0.4 && < 0.5,
+-        ghc >= 7.1 && < 7.2
+diff --git a/compiler/supercompile/install-plugin-inplace b/compiler/supercompile/install-plugin-inplace
+deleted file mode 100755
+index d226fec041..0000000000
+--- a/compiler/supercompile/install-plugin-inplace
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#!/bin/sh
+-
+-SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
+-INPLACE_DIR="$SCRIPT_DIR/../../inplace"
+-
+-# NB: this script relies on the installed Cabal (presumably from the bootstrapping compiler)
+-# actually understanding the package metadata used by the in-tree Cabal. Risky, but works for now.
+-cabal install --disable-library-profiling --user --with-ghc=$INPLACE_DIR/bin/ghc-stage2 --with-ghc-pkg=$INPLACE_DIR/bin/ghc-pkg --package-db=$INPLACE_DIR/lib/package.conf.d
+-- 
+2.21.0 (Apple Git-122.2)
+

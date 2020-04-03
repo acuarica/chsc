@@ -1,0 +1,211 @@
+From 02050ee673ba15a355ce8977a45ddf11e4807f26 Mon Sep 17 00:00:00 2001
+From: Luigi <luismastrangelo@gmail.com>
+Date: Tue, 15 Jan 2019 13:37:46 +0100
+Subject: [PATCH 08/10] New commits on submodules.
+
+---
+ libraries/Cabal        | 2 +-
+ libraries/Win32        | 2 +-
+ libraries/array        | 2 +-
+ libraries/binary       | 2 +-
+ libraries/bytestring   | 2 +-
+ libraries/containers   | 2 +-
+ libraries/deepseq      | 2 +-
+ libraries/directory    | 2 +-
+ libraries/filepath     | 2 +-
+ libraries/haskeline    | 2 +-
+ libraries/hoopl        | 2 +-
+ libraries/hpc          | 2 +-
+ libraries/parallel     | 2 +-
+ libraries/pretty       | 2 +-
+ libraries/primitive    | 2 +-
+ libraries/process      | 2 +-
+ libraries/random       | 2 +-
+ libraries/stm          | 2 +-
+ libraries/terminfo     | 2 +-
+ libraries/time         | 2 +-
+ libraries/transformers | 2 +-
+ libraries/unix         | 2 +-
+ libraries/vector       | 2 +-
+ nofib                  | 2 +-
+ utils/hsc2hs           | 2 +-
+ 25 files changed, 25 insertions(+), 25 deletions(-)
+
+diff --git a/libraries/Cabal b/libraries/Cabal
+index 0d6c16582d..98fcb3a964 160000
+--- a/libraries/Cabal
++++ b/libraries/Cabal
+@@ -1 +1 @@
+-Subproject commit 0d6c16582d3a3efe1ba1a8cd0d8b51294aec8a1e
++Subproject commit 98fcb3a964a4deef67920020a4a02d4d8552cc19
+diff --git a/libraries/Win32 b/libraries/Win32
+index 77953ce0da..12ff8a58d5 160000
+--- a/libraries/Win32
++++ b/libraries/Win32
+@@ -1 +1 @@
+-Subproject commit 77953ce0da42f1486499c735e3747e271eedc683
++Subproject commit 12ff8a58d599d92c8cc6784dff999a31b0268acf
+diff --git a/libraries/array b/libraries/array
+index 1d0435f493..8593a10f65 160000
+--- a/libraries/array
++++ b/libraries/array
+@@ -1 +1 @@
+-Subproject commit 1d0435f4937f03901e32304e279f46ce19b0f089
++Subproject commit 8593a10f65020da3854b1c8478082d454b416118
+diff --git a/libraries/binary b/libraries/binary
+index d4a030ab44..fb461cf048 160000
+--- a/libraries/binary
++++ b/libraries/binary
+@@ -1 +1 @@
+-Subproject commit d4a030ab448191f664fc734bfbee61450a6fa5af
++Subproject commit fb461cf048460813a7fac8e040c1004a0d123e42
+diff --git a/libraries/bytestring b/libraries/bytestring
+index ed48e3d972..847563a2e5 160000
+--- a/libraries/bytestring
++++ b/libraries/bytestring
+@@ -1 +1 @@
+-Subproject commit ed48e3d972c5718f7a4f5802a253ba1d93357bf0
++Subproject commit 847563a2e5ce84714688429c4fee8df5c8568cb0
+diff --git a/libraries/containers b/libraries/containers
+index 6dc1087993..f7273d15ad 160000
+--- a/libraries/containers
++++ b/libraries/containers
+@@ -1 +1 @@
+-Subproject commit 6dc1087993b9c5ef75ce2909272715edef6e13bb
++Subproject commit f7273d15adcc9cac1b3853806cae9df056c9b9f3
+diff --git a/libraries/deepseq b/libraries/deepseq
+index c1994c02f5..a2d507af21 160000
+--- a/libraries/deepseq
++++ b/libraries/deepseq
+@@ -1 +1 @@
+-Subproject commit c1994c02f567d01a94800f5f6a57217da3a4e884
++Subproject commit a2d507af21a8f538b7c2fa129f0ce7ab6a7667dc
+diff --git a/libraries/directory b/libraries/directory
+index 16a6407777..ac68a300cd 160000
+--- a/libraries/directory
++++ b/libraries/directory
+@@ -1 +1 @@
+-Subproject commit 16a640777758b3c1d5569b15adff2afc33b4c5d8
++Subproject commit ac68a300cd2a56b831ac6cee0f5666185c652b4e
+diff --git a/libraries/filepath b/libraries/filepath
+index cd941fb62f..3e5832aa30 160000
+--- a/libraries/filepath
++++ b/libraries/filepath
+@@ -1 +1 @@
+-Subproject commit cd941fb62fae2f8e43dffa01fc44d9fd3f778a5f
++Subproject commit 3e5832aa30414d4c2f0ceabe2e529133dac907a0
+diff --git a/libraries/haskeline b/libraries/haskeline
+index 019e08f2c9..328176735b 160000
+--- a/libraries/haskeline
++++ b/libraries/haskeline
+@@ -1 +1 @@
+-Subproject commit 019e08f2c91b7cc45e5fb98189193a9f5c2d2d57
++Subproject commit 328176735bf68e1e6523648dee04b6af73d2bee2
+diff --git a/libraries/hoopl b/libraries/hoopl
+index 843e8fe4db..89dde6af5b 160000
+--- a/libraries/hoopl
++++ b/libraries/hoopl
+@@ -1 +1 @@
+-Subproject commit 843e8fe4dbb1d9f845dc4b8b3d2c7cfc9944ae9f
++Subproject commit 89dde6af5b2fadfad726412c00a1ab01d34fd2a0
+diff --git a/libraries/hpc b/libraries/hpc
+index 31d24969c3..75f898badf 160000
+--- a/libraries/hpc
++++ b/libraries/hpc
+@@ -1 +1 @@
+-Subproject commit 31d24969c3e3644fb2bad1b85a8f9c7c2cacfbaf
++Subproject commit 75f898badf40cddba7b3bcf149648e49095a52f9
+diff --git a/libraries/parallel b/libraries/parallel
+index fc417be3b1..6ae1419a7c 160000
+--- a/libraries/parallel
++++ b/libraries/parallel
+@@ -1 +1 @@
+-Subproject commit fc417be3b19f84e8e820e4b92d26e0a25c58d1c2
++Subproject commit 6ae1419a7c217e9c15e5615589b11b678779b76f
+diff --git a/libraries/pretty b/libraries/pretty
+index e646037d43..f644ca2eee 160000
+--- a/libraries/pretty
++++ b/libraries/pretty
+@@ -1 +1 @@
+-Subproject commit e646037d433fd26374cbaa555ab79cc9569ff40c
++Subproject commit f644ca2eeef75acba50fe8a66a5b16204af424ce
+diff --git a/libraries/primitive b/libraries/primitive
+index 6b49e83fef..e2310b7a4a 160000
+--- a/libraries/primitive
++++ b/libraries/primitive
+@@ -1 +1 @@
+-Subproject commit 6b49e83fef0126ac09db7acf47f16df43ebce61b
++Subproject commit e2310b7a4afd9ee5f340e5f842d7d25243950271
+diff --git a/libraries/process b/libraries/process
+index a43f9abe12..d860209e53 160000
+--- a/libraries/process
++++ b/libraries/process
+@@ -1 +1 @@
+-Subproject commit a43f9abe12a096e3a8eb6841b4e0232ec2c3b1e4
++Subproject commit d860209e53c1b40b7c251fc8378886bbcb394402
+diff --git a/libraries/random b/libraries/random
+index c72dd0a01a..22a2a16bd6 160000
+--- a/libraries/random
++++ b/libraries/random
+@@ -1 +1 @@
+-Subproject commit c72dd0a01ae6255bead2d4fad33f002bb5684030
++Subproject commit 22a2a16bd62edd553b4f7f2e9eedc26cbf8850d8
+diff --git a/libraries/stm b/libraries/stm
+index 622f386c79..f9979c926c 160000
+--- a/libraries/stm
++++ b/libraries/stm
+@@ -1 +1 @@
+-Subproject commit 622f386c79f2d09580a08ce145536b338dadac9b
++Subproject commit f9979c926ca539362b5a2412359750e8b498e53a
+diff --git a/libraries/terminfo b/libraries/terminfo
+index 1e9460ca4f..27e82750fa 160000
+--- a/libraries/terminfo
++++ b/libraries/terminfo
+@@ -1 +1 @@
+-Subproject commit 1e9460ca4f651099c6a0ad26eb1197297d5e8089
++Subproject commit 27e82750fac178fc6e049fe44be6de45f24814ae
+diff --git a/libraries/time b/libraries/time
+index 6319f3722f..9e96c26132 160000
+--- a/libraries/time
++++ b/libraries/time
+@@ -1 +1 @@
+-Subproject commit 6319f3722fe4bb711bb167911ba1c50e5ee3bd2d
++Subproject commit 9e96c26132fef01a3113c8b152b1be96c0eccd86
+diff --git a/libraries/transformers b/libraries/transformers
+index 4dc1bbcc46..80557845cd 160000
+--- a/libraries/transformers
++++ b/libraries/transformers
+@@ -1 +1 @@
+-Subproject commit 4dc1bbcc4637d4cc6dc544e12dc97dbcb038a8ef
++Subproject commit 80557845cdc0e72bc05cec19cf7a1bf5495e9e69
+diff --git a/libraries/unix b/libraries/unix
+index fc3297d5d4..b08d39d2c9 160000
+--- a/libraries/unix
++++ b/libraries/unix
+@@ -1 +1 @@
+-Subproject commit fc3297d5d4be30141ef8923db6b128f788646a5f
++Subproject commit b08d39d2c986c31fef8ab6e4d737000fa4af694e
+diff --git a/libraries/vector b/libraries/vector
+index 521f5c58aa..a1f0b6ae22 160000
+--- a/libraries/vector
++++ b/libraries/vector
+@@ -1 +1 @@
+-Subproject commit 521f5c58aab508d5a3ff1268485d68a14931574f
++Subproject commit a1f0b6ae223d16233f26225310bf08ca1d4180ff
+diff --git a/nofib b/nofib
+index 1364fe623f..8632268ad8 160000
+--- a/nofib
++++ b/nofib
+@@ -1 +1 @@
+-Subproject commit 1364fe623f9216108a285a8804a27bdd8dfea3c4
++Subproject commit 8632268ad8405f0c01aaad3ad16e23c65771ba49
+diff --git a/utils/hsc2hs b/utils/hsc2hs
+index 9cf074f75f..fac8b62e48 160000
+--- a/utils/hsc2hs
++++ b/utils/hsc2hs
+@@ -1 +1 @@
+-Subproject commit 9cf074f75f88b0ec634266e97a63d7782bcd946d
++Subproject commit fac8b62e48f4c99cfe8f3efff63c8fcd94b2a1d6
+-- 
+2.21.0 (Apple Git-122.2)
+

@@ -1,0 +1,476 @@
+From 33afa15d2af49c243fc73c50291bc2d3a0cc424c Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Wed, 8 Mar 2017 11:37:23 +0100
+Subject: [PATCH 7/8] Added tests folder, in the future should be
+ benchmarks+experiments.
+
+---
+ tests/Append3.hs          |  10 +
+ tests/Hola.hs             |  23 +++
+ tests/Makefile            |  16 ++
+ tests/ParserCombinator.hs | 383 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 432 insertions(+)
+ create mode 100644 tests/Append3.hs
+ create mode 100644 tests/Hola.hs
+ create mode 100644 tests/Makefile
+ create mode 100644 tests/ParserCombinator.hs
+
+diff --git a/tests/Append3.hs b/tests/Append3.hs
+new file mode 100644
+index 0000000000..1fc957a6f3
+--- /dev/null
++++ b/tests/Append3.hs
+@@ -0,0 +1,10 @@
++
++module Append3 (append3) where
++
++append :: [a] -> [a] -> [a]
++append [] ys = ys
++append (x:xs) ys = x : append xs ys
++
++{-# SUPERCOMPILE append3 #-}
++append3 :: [a] -> [a] -> [a] -> [a]
++append3 xs ys zs = append (append xs ys) zs
+diff --git a/tests/Hola.hs b/tests/Hola.hs
+new file mode 100644
+index 0000000000..3ba0932315
+--- /dev/null
++++ b/tests/Hola.hs
+@@ -0,0 +1,23 @@
++
++module Main (main) where
++
++append :: [a] -> [a] -> [a]
++append [] ys = ys
++append (x:xs) ys = x : append xs ys
++
++{-# SUPERCOMPILE app3 #-}
++app3 :: [a] -> [a] -> [a] -> [a]
++app3 xs ys zs = append (append xs ys) zs
++
++-- f = map (*4) . map (+3) . map (*2) . map (+5)
++-- superlist = f [1..10]
++-- test = sum $ f [1..1000]
++
++main :: IO ()
++main = do
++  let r1 = app3 [1..100000] [100001..200000] [200001..300000]
++  let r2 = app3 [10000..1] [20001..10000] [30001..20000]
++  let r3 = app3 [1..10000] [10001..20000] [20001..30000]
++  let r = app3 r1 r2 r3
++  let s = sum r
++  print s
+diff --git a/tests/Makefile b/tests/Makefile
+new file mode 100644
+index 0000000000..38a97a4296
+--- /dev/null
++++ b/tests/Makefile
+@@ -0,0 +1,16 @@
++
++GHC=../inplace/bin/ghc-stage2
++FLAGS=-fforce-recomp -O -fsupercompilation -ddump-simpl
++
++compile: pcsimp.o
++
++# $(SP) $(FLAGS) Append3.hs
++
++run:
++	./Hola
++
++clean:
++	rm Hola.hi Hola.o Hola
++
++%.o: %.hs
++	$(GHC) $(FLAGS) $(SPFLAGS) -c $< -o $@
+diff --git a/tests/ParserCombinator.hs b/tests/ParserCombinator.hs
+new file mode 100644
+index 0000000000..eb6d564ac3
+--- /dev/null
++++ b/tests/ParserCombinator.hs
+@@ -0,0 +1,383 @@
++-- #include "../Prelude.core"
++
++-- {-# SUPERCOMPILE PC #-}
++
++module PC where
++
++import Data.Char
++
++data Expr = Var Var | Con Tag [Expr]
++  | Lam Var Expr
++  | App Expr Expr
++  | Let [Binding] Expr
++  | Case Expr [Alt] deriving (Eq, Show)
++
++type Var = String
++type Tag = String
++type Binding = (Var, Expr)
++type Alt = (Pat, Expr)
++data Pat = Pat Tag [Var] deriving (Eq, Show)
++
++type Chars = Int
++data ParserResult a = Error String | Done a Chars String
++newtype Parser a = Parser { parse :: String -> ParserResult a }
++con :: Tag -> Expr
++con tag = Con tag []
++
++app :: Expr -> [Expr] -> Expr
++app expr args = case args of
++  [] -> expr
++  arg:args' -> app (App expr arg) args'
++
++zero, suc, nil, cons :: Expr
++zero = con "Zero"
++suc = con "Succ"
++nil = con "Nil"
++cons = con "Cons"
++
++nat :: Int -> Expr
++nat n = if n > 0 then App suc (nat (n - 1)) else zero
++
++fmap' :: (a -> b) -> Parser a -> Parser b
++fmap' f parser =
++  case parser of
++    Parser parse -> Parser (\s ->
++      case parse s of
++        Error msg -> Error msg
++        Done a chars rest -> Done (f a) chars rest
++      )
++
++pure' :: a -> Parser a
++pure' a = Parser (Done a 0)
++
++(<*>!) :: Parser (a -> b) -> Parser a -> Parser b
++(<*>!) op v = case op of
++  Parser pf -> case v of
++    Parser p -> Parser (\s ->
++      case pf s of
++        Error msg -> Error msg
++        Done f chars rest -> case p rest of
++          Error msg' -> Error msg'
++          Done a chars' rest' -> Done (f a) (chars+chars') rest'
++      )
++
++return' :: a -> Parser a
++return' = pure'
++
++(>>=!) :: Parser a -> (a -> Parser b) -> Parser b
++(>>=!) pr f = case pr of
++  Parser p -> Parser (\s ->
++    case p s of
++      Error msg -> Error msg
++      Done a chars rest -> case parse (f a) rest of
++        Error msg' -> Error msg'
++        Done b chars' rest' -> Done b (chars+chars') rest'
++    )
++
++(>>!) :: Parser a -> Parser b -> Parser b
++(>>!) p q = p >>=! (\_x -> q)
++
++empty :: Parser a
++empty = Parser (const (Error "Empty parser"))
++
++(<|>) :: Parser a -> Parser a -> Parser a
++(<|>) pr qr = case pr of
++  Parser p -> case qr of
++    Parser q -> Parser (\s ->
++      case p s of
++        Error msg'p -> case q s of
++          Error msg'q -> Error (msg'p ++ " or " ++ msg'q)
++          done -> done
++        done -> done
++        )
++
++some :: Parser a -> Parser [a]
++some v = some_v
++  where
++    many_v = some_v <|> pure' []
++    some_v = (fmap' (:) v) <*>! many_v
++
++many :: Parser a -> Parser [a]
++many v = many_v
++  where
++    many_v = some_v <|> pure' []
++    some_v = (fmap' (:) v) <*>! many_v
++
++item :: Parser Char
++item = Parser (\s -> case s of
++    []     -> Error "Reached EOF"
++    (c:cs) -> Done c 1 cs)
++
++satisfy :: String -> (Char -> Bool) -> Parser Char
++satisfy msg pred = (>>=!) item (\c ->
++  if pred c
++    then return' c
++    else Parser (const (Error (c: "expecting  got " ++ msg ))))
++
++oneOf :: String -> Parser Char
++oneOf s = satisfy s (`elem` s)
++
++char :: Char -> Parser Char
++char c = satisfy [c] (c ==)
++
++natural :: Parser Integer
++natural = fmap' read (some (satisfy "isDigit" isDigit))
++
++string :: String -> Parser String
++--string [] = return []
++--string (c:cs) = do { char c; string cs; return (c:cs)}
++string s = case s of
++  [] -> return' []
++  (c:cs) -> char c >>! string cs >>! return' (c:cs)
++
++token :: Parser a -> Parser a
++--token p = do { a <- p; spaces ; return a}
++token p = p >>=! (\a -> spaces >>! return' a)
++
++reserved :: String -> Parser String
++reserved s = token (string s)
++
++spaces :: Parser String
++spaces = many $ oneOf " \n\r"
++
++digit :: Parser Char
++digit = satisfy "isdigit" isDigit
++
++alpha :: Parser Char
++alpha = satisfy "isalpha" isAlpha
++
++loweralpha :: Parser Char
++loweralpha = satisfy "loweralpha" (\c -> isAlpha c && isLower c)
++
++upperalpha :: Parser Char
++upperalpha = satisfy "upperalpha" (\c -> isAlpha c && isUpper c)
++
++dollar :: Parser Char
++dollar = satisfy "dollar sign" (== '$')
++
++underscore :: Parser Char
++underscore = satisfy "underscore" (== '_')
++
++quote :: Parser Char
++quote = satisfy "quote" (== '\'')
++
++number :: Parser Int
++--number = do
++--  s <- string "-" <|> return []
++--  cs <- some digit
++--  spaces
++--  return (read (s ++ cs))
++number =
++  (string "-" <|> return' []) >>=! ( \s ->
++  some digit >>=! ( \cs ->
++  spaces >>!
++  return' (read (s ++ cs))
++  ))
++
++lowerword :: Parser String
++lowerword =
++  loweralpha >>=! (\c->
++  many alpha >>=! (\cs->
++  spaces >>!
++  return' (c:cs)
++  ))
++
++upperword :: Parser String
++upperword =
++  upperalpha >>=! (\c->
++  many alpha >>=! (\cs->
++  spaces >>!
++  return' (c:cs)
++  ))
++
++paired:: String -> String -> Parser a -> Parser a
++paired o c m = reserved o >>! m >>=! (\n-> reserved c >>! return' n )
++
++parens :: Parser a -> Parser a
++parens = paired "(" ")"
++
++braces :: Parser a -> Parser a
++braces = paired "{" "}"
++
++brackets :: Parser a -> Parser a
++brackets = paired "[" "]"
++
++chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
++chainl1 p op = p >>=! \a -> rest a
++  where rest a = (op >>=! (\f -> p >>=! \b-> rest (f a b))) <|> return' a
++
++chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
++chainr1 p op = p >>=! \a -> rest a
++  where rest a = (op >>=! \f->  p >>=! \b->  rest b>>=! \b'-> return' (f a b'))
++          <|> return' a
++
++exprp :: Parser Expr
++exprp = (termp `chainr1` conslistp) `chainl1` return' App
++
++conslistp :: Parser (Expr -> Expr -> Expr)
++conslistp = reserved ":" >>! return' (App . App cons)
++
++termp :: Parser Expr
++termp = litintp
++    <|> letp
++    <|> casep
++    <|> varp
++    <|> conp
++    <|> braces lamp
++    <|> parens exprp
++    <|> brackets listp
++
++litintp :: Parser Expr
++litintp = number >>=! \n-> return' (nat n)
++
++letp :: Parser Expr
++letp =
++  reserved "let" >>!
++  bindsp >>=! \binds ->
++  --var <- varnamep
++  --reserved "="
++  --valexpr <- exprp
++  reserved "in" >>!
++  exprp >>=! \inexpr ->
++  return' (Let binds inexpr)
++
++bindsp :: Parser [Binding]
++bindsp =
++        varnamep >>=! \var->
++        reserved "=" >>!
++        exprp >>=! \valexpr ->
++        (
++          reserved ";" >>!
++          bindsp >>=! \binds ->
++          return' ((var, valexpr):binds) ) <|>
++          return' [(var, valexpr)]
++
++varp :: Parser Expr
++varp =
++  varnamep >>=! \var->
++  return' (Var var)
++
++conp :: Parser Expr
++conp = upperword >>=! \tag-> return' (con tag)
++
++lamp :: Parser Expr
++lamp =
++  varnamep >>=! \var->
++  reserved "->" >>!
++  exprp >>=! \valexpr ->
++  return' (Lam var valexpr)
++
++casep :: Parser Expr
++casep =
++  reserved "case" >>!
++  exprp >>=! \scexpr ->
++  reserved "of" >>!
++  some altp >>=! \alts->
++  return' (Case scexpr alts)
++
++altp :: Parser (Pat, Expr)
++altp =
++  upperword >>=! \tag->
++  many varnamep >>=! \vars->
++  reserved "->" >>!
++  exprp >>=! \res->
++  reserved ";" >>!
++  return' (Pat tag vars, res)
++
++listp :: Parser Expr
++listp = (
++      exprp >>=! \item ->
++      (
++        reserved "," >>!
++        listp >>=! \rest->
++        return' (app cons [item, rest])) <|>
++        return' (app cons [item, nil])
++    ) <|> return' nil
++
++filterByKeyword :: Parser String -> (String -> Bool) -> Parser String
++filterByKeyword p pred = (>>=!) p (\s -> if pred s
++    then return' s
++    else Parser (const (Error "expecting %s got %s")))
++
++isElem :: Eq a => a -> [a] -> Bool
++isElem x ys = case ys of
++  [] -> False
++  (y:ys') -> x == y || isElem x ys'
++
++-- Type error: Char, [Char].
++isKeyword :: String -> Bool
++isKeyword s = False -- s == "let" --, "in", "case", "of"]
++
++varnamep :: Parser Var
++varnamep = varid >>=! (\s -> if isKeyword s
++    then return' s
++    else Parser (const (Error "expecting %s got %s")))
++
++varid :: Parser Var
++varid =
++  (loweralpha <|> dollar <|> underscore) >>=! (\c->
++  (many (alpha <|> digit <|> underscore <|> quote) ) >>=! (\cs->
++  spaces >>!
++  return' "asdf" --(c:cs)
++  ))
++
++parseWith :: Parser Expr -> String -> Expr
++parseWith p s =
++  case parse (spaces >>! p) s of
++    Done a chars rest -> case rest of
++      [] -> a
++      _ -> error $ "Parser didn't consume entire stream: <<" ++ rest ++ ">> " ++
++        " in <<" ++ s ++ ">> at " ++ show chars ++
++                   " with (expr ommited by --show--)"
++    Error msg  -> error $ "Parser error: %s in ``%s''" ++ msg ++ s
++
++{-# SUPERCOMPILE parseWith #-}
++parseExpr :: String -> Expr
++parseExpr = parseWith exprp
++
++root = parseExpr
++
++preludeExpr :: String
++preludeExpr =
++  "let \
++  \  id = {a->a} ;\
++  \  app = {p->{q->p q}} ;\
++  \  inc = {n->Succ n} ;\
++  \  copyN = {n->case n of \
++  \    Zero -> 0;\
++  \    Succ n' -> Succ (copyN n');\
++  \  };\
++  \  append = {xs->{ys->case xs of \
++  \    Nil -> ys;\
++  \    Cons x xs' -> Cons x (append xs' ys);\
++  \  }};\
++  \  reverse' = {xs->case xs of \
++  \    Nil -> Nil;\
++  \    Cons x xs' -> append (reverse' xs') [x];\
++  \  };\
++  \  reverse = {xs-> \
++  \    let reverseAccum = {xs->{as->case xs of \
++  \      Nil -> as;\
++  \      Cons y ys -> reverseAccum ys (Cons y as);\
++  \    }} in reverseAccum xs [] }  ;\
++  \  map = {f->{xs->case xs of \
++  \    Nil->Nil;\
++  \    Cons y ys->Cons (f y)(map f ys);\
++  \  }};\
++  \  plus = {n->{m->case n of \
++  \    Zero->m;\
++  \    Succ nn->plus nn (Succ m);\
++  \  }};\
++  \  mult = {n->{m->case n of \
++  \    Zero->0;\
++  \    Succ nn->plus (mult nn m) m;\
++  \  }};\
++  \  len = {xs->case xs of Nil->0; Cons y ys->Succ (len ys);} ; \
++  \  head = {xs->case xs of Cons y ys -> y; } ; \
++  \  tail = {xs->case xs of Cons y ys -> ys; } ; \
++  \  inf = {n->Cons n (inf (Succ n))} ; \
++  \  infA = Cons A inf in "
++
++prelude100k = concat $ replicate 100 preludeExpr
++
++tests = [(root (prelude100k ++ "x"), Var "?")]
+-- 
+2.21.0 (Apple Git-122.2)
+

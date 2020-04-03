@@ -1,0 +1,78 @@
+From 286abe34ce75ee32a5806c51ea4865eb2405a9b1 Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Wed, 8 Mar 2017 13:40:19 +0100
+Subject: [PATCH 8/8] Added VM description.
+
+---
+ VM.md | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
+ create mode 100644 VM.md
+
+diff --git a/VM.md b/VM.md
+new file mode 100644
+index 0000000000..1de97d1c50
+--- /dev/null
++++ b/VM.md
+@@ -0,0 +1,59 @@
++
++# Virtual Machine Setup
++
++## Operating System Setup
++
++  * OS: Linux Ubuntu Mate
++    https://ubuntu-mate.org/
++  * Ubuntu Version: 16.04.2
++    http://cdimage.ubuntu.com/ubuntu-mate/releases/16.04.2/release/ubuntu-mate-16.04.2-desktop-amd64.iso
++  * Architecture: x86_64
++  * Kernel: 4.8.0-39-generic
++  * Machine name: vm-chsc-ghc
++
++## User Setup
++
++  * user: chsc
++  * password: chsc
++
++## SSH Server
++
++The VM is running a SSH server at port 22.
++The VirtualBox machine is configured to forward the port 2222 from the host machine
++to port 22 of the VM.
++
++Summary:
++  * Local Port: 22 (access inside the guest machine)
++  * Forwarded Port: 2222 (access from the host machine)
++
++Example to access from the host machine:
++
++```sh
++ssh chsc@localhost -p2222
++```
++
++## System-wide Installed Applications
++
++  * Zsh 5.1.1 / Oh-my-zsh
++  * VIM 7.4
++  * GNU Emacs 24.5.1 / Spacemacs 0.200.7
++  * Ranger 1.7.1
++  * Git 2.7.4
++  * Ghc-mod 5.4.0.0
++  * Tmux 2.1
++  * Haskell-platform (GHC: 7.10.3)
++  * Haskell-stack 0.1.10.0 x86_64
++  
++## Haskell specific applications
++
++The bootstrap compiler used to build the supercompiler is located at:
++
++```sh
++$HOME/ghc-7.4.2/bin/ghc
++```
++
++The supercompiler is located at
++  
++```sh
++$HOME/work/ghc/inplace/bin/ghc-stage2
++```
+-- 
+2.21.0 (Apple Git-122.2)
+

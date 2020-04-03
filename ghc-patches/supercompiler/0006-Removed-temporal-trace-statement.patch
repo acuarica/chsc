@@ -1,0 +1,25 @@
+From 70f756892f293c8bfa92c43f5740a2cb9b4e4c5d Mon Sep 17 00:00:00 2001
+From: luigi <luismastrangelo@usi.ch>
+Date: Wed, 8 Mar 2017 11:36:26 +0100
+Subject: [PATCH 6/8] Removed temporal trace statement.
+
+---
+ compiler/supercompile/Supercompile/Drive/Process3.hs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/compiler/supercompile/Supercompile/Drive/Process3.hs b/compiler/supercompile/Supercompile/Drive/Process3.hs
+index c6cdd140c4..018c8e0f8c 100644
+--- a/compiler/supercompile/Supercompile/Drive/Process3.hs
++++ b/compiler/supercompile/Supercompile/Drive/Process3.hs
+@@ -624,7 +624,7 @@ memo opt init_state = {-# SCC "memo'" #-} memo_opt init_state
+                         -- are non-trivial so we will eventually have to stop genning. Furthermore, it means that we can't end
+                         -- up with a FIXME: continue
+                        RightGivesTypeGen rn_l s rn_r -> -- pprTrace "typegen" (pPrintFullState fullStatePrettiness state $$ pPrintFullState fullStatePrettiness s) $
+-                                                        trace "typegen" $
++                                                        -- trace "typegen" $
+                                                                           (True, do { (deeds, e') <- memo_opt s
+                                                                                     ; (_, e'_r) <- renameSCResult (case s of (_, Heap _ ids, _, _) -> ids) (rn_r, e')
+                                                                                       -- OH MY GOD:
+-- 
+2.21.0 (Apple Git-122.2)
+
